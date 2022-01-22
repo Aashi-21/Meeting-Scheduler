@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="utf-8">
+		<title>Meeting Scheduler</title>
+		<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.4.0/fullcalendar.css" />
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.4.0/fullcalendar.min.js"></script>
+  <script>
+  $(document).ready(function() {
+   var calendar = $('#calendar').fullCalendar({
+    editable:true,
+    header:{
+     left:'prev,next today',
+     center:'title',
+     right:'month,agendaWeek,agendaDay'
+    },
+    events: [{% for row in calendar %}{ id : '{{row.id}}', title : '{{row.title}}', start : '{{row.start_event}}', end : '{{row.end_event}}', descr : '{{row.descr}}', }, {% endfor %}],
+    
+    eventRender: function(event, element) { 
+        eventsdate = moment(event.start).format('hh:mm a');
+          eventedate = moment(event.end).format('hh:mm a');
+
+          element.find('.fc-time').html(eventsdate + " - " + eventedate + "<br>");
+        
+            element.find('.fc-title').append("<br/>" + event.descr);
+            
+        } ,
+    selectable:true,
+    selectHelper:true,
+    select: function(start, end, allDay)
+    {
+     var title = prompt("Enter Event Title");
+     var descr = prompt("Enter Event description");
+     if(title)
+     {
+      var start = $.fullCalendar.formatDate(start, "Y-MM-DD HH:mm:ss");
+      var end = $.fullCalendar.formatDate(end, "Y-MM-DD HH:mm:ss");
+      $.ajax({
+       url:"/insert",
+       type:"POST",
+       data:{title:title, start:start, end:end , descr:descr},
+       success:function(data)
+       {
+         //alert(data)
+        alert("Added Successfully");
+        window.location.replace("/home");
+       }
+      })
+     }
+    },
+    editable:true,
+    eventResize:function(event)
+    {
+     var start = $.fullCalendar.formatDate(event.start, "Y-MM-DD HH:mm:ss");
+     var end = $.fullCalendar.formatDate(event.end, "Y-MM-DD HH:mm:ss");
+     var title = event.title;
+     var descr = event.descr;
+     var id = event.id;
+     $.ajax({
+      url:"/update",
+      type:"POST",
+      data:{title:title, start:start, end:end, descr:descr,id:id},
+      success:function(){
+       calendar.fullCalendar('refetchEvents');
+       alert('Event Update');
+      }
+     })
+    },
+      
+    eventDrop:function(event)
+    {
+     var start = $.fullCalendar.formatDate(event.start, "Y-MM-DD HH:mm:ss");
+     var end = $.fullCalendar.formatDate(event.end, "Y-MM-DD HH:mm:ss");
+     var title = event.title;
+     var descr = event.descr;
+     var id = event.id;
+     $.ajax({
+      url:"/update",
+      type:"POST",
+      data:{title:title, start:start, end:end,descr:descr, id:id},
+      success:function()
+      {
+       calendar.fullCalendar('refetchEvents');
+       alert("Event Updated");
+      }
+     });
+    },
+  
+    eventClick:function(event)
+    {
+     if(confirm("Are you sure you want to remove it?"))
+     {
+      var id = event.id;
+      $.ajax({
+       url:"/delete",
+       type:"POST",
+       data:{id:id},
+       success:function()
+       {
+        calendar.fullCalendar('refetchEvents');
+        alert("Event Removed");
+       }
+      })
+     }
+    },
+  
+   });
+  });
+     
+  </script>
+ </head>
+
+  <body class="loggedin">
+		<nav class="navtop">
+			<div>
+				<h1>Meeting Scheduler</h1>
+                
+				<a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i>Logout</a>
+			</div>
+		</nav>
+		<div class="content">
+			
+		</div>
+
+  <br />
+  <h2 align="center"><a href="#">Meeting Scheduler</a></h2>
+  <br />
+  <div class="container">
+   <div id="calendar"></div>
+  </div>
+ </body>
+</html>
+
